@@ -9,12 +9,11 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, 
                  signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged,
-                 RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+                 RecaptchaVerifier, signInWithPhoneNumber, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, getDocs, query, where, 
-                 orderBy, serverTimestamp, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+                 orderBy, serverTimestamp, doc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyClVGy9JA0dGdKul26oGp9uandWCLRczyw",
             authDomain: "mirontelecom.firebaseapp.com",
@@ -26,14 +25,12 @@
             measurementId: "G-TH1RWN4RMN"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const storage = getStorage(app);
         const googleProvider = new GoogleAuthProvider();
 
-        // Make available globally
         window.firebaseApp = app;
         window.auth = auth;
         window.db = db;
@@ -47,6 +44,7 @@
             onAuthStateChanged,
             RecaptchaVerifier,
             signInWithPhoneNumber,
+            updateProfile,
             collection,
             addDoc,
             getDocs,
@@ -57,6 +55,7 @@
             doc,
             updateDoc,
             deleteDoc,
+            onSnapshot,
             ref,
             uploadBytes,
             getDownloadURL
@@ -83,6 +82,7 @@
             --success: #4CAF50;
             --warning: #ff9800;
             --danger: #f44336;
+            --info: #2196F3;
             --card-bg: #1e1e1e;
             --transition: all 0.3s ease;
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -128,6 +128,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            cursor: pointer;
         }
         
         .logo h1 {
@@ -531,12 +532,17 @@
         }
         
         /* Category Page */
-        .category-page {
+        .page {
             display: none;
             padding: 20px 0;
+            animation: fadeIn 0.3s ease;
         }
         
-        .category-header {
+        .page.active {
+            display: block;
+        }
+        
+        .page-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -553,10 +559,14 @@
             align-items: center;
             gap: 10px;
             transition: var(--transition);
+            padding: 10px 15px;
+            border-radius: 8px;
+            background-color: var(--secondary);
         }
         
         .back-btn:hover {
             color: var(--primary);
+            background-color: var(--card-bg);
         }
         
         /* Product Detail Modal */
@@ -690,10 +700,19 @@
             align-items: center;
             color: var(--light-gray);
             text-decoration: none;
+            cursor: pointer;
             transition: var(--transition);
+            padding: 5px;
+            border-radius: 8px;
+            min-width: 60px;
         }
         
-        .nav-item.active, .nav-item:hover {
+        .nav-item.active {
+            color: var(--primary);
+            background-color: rgba(255, 107, 53, 0.1);
+        }
+        
+        .nav-item:hover {
             color: var(--primary);
         }
         
@@ -793,6 +812,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
+            margin-top: 10px;
         }
         
         .auth-btn:hover {
@@ -979,8 +999,8 @@
         }
         
         .profile-avatar {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             background-color: var(--primary);
             display: flex;
@@ -988,6 +1008,13 @@
             justify-content: center;
             font-size: 36px;
             margin: 0 auto 15px;
+            overflow: hidden;
+        }
+        
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         
         .profile-name {
@@ -997,6 +1024,7 @@
         
         .profile-email {
             color: var(--light-gray);
+            font-size: 14px;
         }
         
         .profile-menu {
@@ -1022,40 +1050,361 @@
             width: 30px;
         }
         
-        /* Notification Modal */
-        .notification-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            right: 0;
-            width: 100%;
-            max-width: 400px;
-            height: 100%;
-            background-color: var(--darker);
-            z-index: 2000;
-            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
-            animation: slideInRight 0.3s ease;
+        /* Orders Page */
+        .orders-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
         
-        .notification-item {
+        .order-card {
+            background-color: var(--card-bg);
+            border-radius: 15px;
             padding: 20px;
+            box-shadow: var(--shadow);
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
             border-bottom: 1px solid var(--gray);
         }
         
-        .notification-title {
+        .order-id {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .order-date {
+            color: var(--light-gray);
+            font-size: 14px;
+        }
+        
+        .order-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background-color: rgba(255, 152, 0, 0.2);
+            color: var(--warning);
+        }
+        
+        .status-confirmed {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: var(--success);
+        }
+        
+        .status-shipped {
+            background-color: rgba(33, 150, 243, 0.2);
+            color: var(--info);
+        }
+        
+        .status-delivered {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .order-items {
+            margin-bottom: 15px;
+        }
+        
+        .order-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: var(--secondary);
+            border-radius: 8px;
+        }
+        
+        .order-item-img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-right: 15px;
+        }
+        
+        .order-item-info {
+            flex: 1;
+        }
+        
+        .order-item-name {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .order-item-price {
+            font-size: 14px;
+            color: var(--primary);
+        }
+        
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid var(--gray);
+        }
+        
+        .order-total {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        /* Settings Page */
+        .settings-container {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+        }
+        
+        .settings-group {
+            margin-bottom: 30px;
+        }
+        
+        .settings-title {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: var(--primary);
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--secondary);
+        }
+        
+        .setting-info h4 {
             font-size: 16px;
             margin-bottom: 5px;
         }
         
-        .notification-message {
-            color: var(--light-gray);
+        .setting-info p {
             font-size: 14px;
-            margin-bottom: 10px;
+            color: var(--light-gray);
         }
         
-        .notification-time {
-            font-size: 12px;
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--gray);
+            transition: var(--transition);
+            border-radius: 34px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: var(--transition);
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--primary);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+        
+        /* Help & Support Page */
+        .help-container {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+        
+        .help-icon {
+            font-size: 60px;
             color: var(--primary);
+            margin-bottom: 20px;
+        }
+        
+        .help-title {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        
+        .help-description {
+            color: var(--light-gray);
+            line-height: 1.6;
+            margin-bottom: 30px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .contact-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .contact-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: var(--secondary);
+            color: var(--light);
+            text-decoration: none;
+            transition: var(--transition);
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .contact-btn:hover {
+            background-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .whatsapp-btn {
+            background-color: #25D366;
+            color: white;
+        }
+        
+        .whatsapp-btn:hover {
+            background-color: #128C7E;
+        }
+        
+        /* Checkout Page */
+        .checkout-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+        
+        @media (min-width: 992px) {
+            .checkout-container {
+                grid-template-columns: 2fr 1fr;
+            }
+        }
+        
+        .checkout-section {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+        }
+        
+        .checkout-title {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: var(--primary);
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .address-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        .payment-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .payment-method {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 2px solid var(--gray);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .payment-method.selected {
+            border-color: var(--primary);
+            background-color: rgba(255, 107, 53, 0.1);
+        }
+        
+        .payment-icon {
+            font-size: 24px;
+            margin-right: 15px;
+            width: 40px;
+        }
+        
+        .payment-info h4 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .payment-info p {
+            font-size: 14px;
+            color: var(--light-gray);
+        }
+        
+        .order-summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--secondary);
+        }
+        
+        .order-summary-total {
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid var(--gray);
         }
         
         /* Toast Notification */
@@ -1071,6 +1420,15 @@
             z-index: 3000;
             animation: fadeIn 0.3s ease;
             display: none;
+            max-width: 350px;
+        }
+        
+        .toast.success {
+            background-color: var(--success);
+        }
+        
+        .toast.error {
+            background-color: var(--danger);
         }
         
         /* Loading Spinner */
@@ -1098,6 +1456,19 @@
         
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--light-gray);
+        }
+        
+        .empty-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: var(--gray);
         }
         
         /* Responsive */
@@ -1141,6 +1512,60 @@
                 grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
                 gap: 15px;
             }
+            
+            .form-row {
+                flex-direction: column;
+            }
+        }
+        
+        /* History Page */
+        .history-container {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+        }
+        
+        .history-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+        
+        .history-tab {
+            padding: 10px 20px;
+            background-color: var(--secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            border: none;
+            color: var(--light);
+            font-size: 14px;
+        }
+        
+        .history-tab.active {
+            background-color: var(--primary);
+        }
+        
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .history-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--light-gray);
+        }
+        
+        .history-empty i {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: var(--gray);
         }
     </style>
 </head>
@@ -1153,46 +1578,46 @@
     <!-- Toast Notification -->
     <div class="toast" id="toast"></div>
     
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Header -->
-        <header class="header">
-            <div class="container header-content">
-                <div class="logo">
-                    <i class="fas fa-store"></i>
-                    <h1>M.T <span>Digital</span></h1>
-                </div>
-                
-                <div class="search-container">
-                    <input type="text" class="search-bar" id="searchBar" placeholder="Search for products, brands and more...">
-                    <button class="search-btn" id="searchBtn">
-                        <i class="fas fa-search"></i>
-                    </button>
-                    
-                    <!-- Search Results -->
-                    <div class="search-results" id="searchResults"></div>
-                </div>
-                
-                <div class="header-icons">
-                    <button class="icon-btn" id="notificationBtn">
-                        <i class="fas fa-bell"></i>
-                        <span class="notification-count" id="notificationCount">0</span>
-                    </button>
-                    
-                    <button class="icon-btn" id="cartBtn">
-                        <i class="fas fa-shopping-cart"></i>
-                        <span class="cart-count" id="cartCount">0</span>
-                    </button>
-                    
-                    <button class="icon-btn" id="profileBtn">
-                        <i class="fas fa-user"></i>
-                    </button>
-                </div>
+    <!-- Header -->
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo" id="logoBtn">
+                <i class="fas fa-store"></i>
+                <h1>M.T <span>Digital</span></h1>
             </div>
-        </header>
-        
+            
+            <div class="search-container">
+                <input type="text" class="search-bar" id="searchBar" placeholder="Search for products, brands and more...">
+                <button class="search-btn" id="searchBtn">
+                    <i class="fas fa-search"></i>
+                </button>
+                
+                <!-- Search Results -->
+                <div class="search-results" id="searchResults"></div>
+            </div>
+            
+            <div class="header-icons">
+                <button class="icon-btn" id="notificationBtn">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-count" id="notificationCount">0</span>
+                </button>
+                
+                <button class="icon-btn" id="cartBtn">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </button>
+                
+                <button class="icon-btn" id="profileBtn">
+                    <i class="fas fa-user"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Pages -->
+    <main>
         <!-- Home Page -->
-        <div id="homePage">
+        <div class="page active" id="homePage">
             <!-- Trending Products Slider -->
             <section class="trending-section">
                 <div class="container">
@@ -1239,11 +1664,11 @@
         </div>
         
         <!-- Category Page -->
-        <div class="category-page" id="categoryPage">
+        <div class="page" id="categoryPage">
             <div class="container">
-                <div class="category-header">
+                <div class="page-header">
                     <button class="back-btn" id="backBtn">
-                        <i class="fas fa-arrow-left"></i> Back to Home
+                        <i class="fas fa-arrow-left"></i> Back
                     </button>
                     <h2 class="section-title" id="categoryTitle"></h2>
                 </div>
@@ -1255,7 +1680,430 @@
                 <div class="products-grid" id="categoryProductsGrid"></div>
             </div>
         </div>
-    </div>
+        
+        <!-- Orders Page -->
+        <div class="page" id="ordersPage">
+            <div class="container">
+                <div class="page-header">
+                    <button class="back-btn" id="ordersBackBtn">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <h2 class="section-title">My Orders</h2>
+                </div>
+                
+                <div class="orders-container" id="ordersContainer">
+                    <div class="empty-state">
+                        <i class="fas fa-box-open empty-icon"></i>
+                        <h3>No Orders Yet</h3>
+                        <p>You haven't placed any orders yet. Start shopping now!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- History Page -->
+        <div class="page" id="historyPage">
+            <div class="container">
+                <div class="page-header">
+                    <button class="back-btn" id="historyBackBtn">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <h2 class="section-title">Order History</h2>
+                </div>
+                
+                <div class="history-container">
+                    <div class="history-tabs">
+                        <button class="history-tab active" data-status="all">All</button>
+                        <button class="history-tab" data-status="pending">Pending</button>
+                        <button class="history-tab" data-status="confirmed">Confirmed</button>
+                        <button class="history-tab" data-status="shipped">Shipped</button>
+                        <button class="history-tab" data-status="delivered">Delivered</button>
+                    </div>
+                    
+                    <div class="history-list" id="historyList">
+                        <div class="history-empty">
+                            <i class="fas fa-history"></i>
+                            <h3>No Order History</h3>
+                            <p>Your order history will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings Page -->
+        <div class="page" id="settingsPage">
+            <div class="container">
+                <div class="page-header">
+                    <button class="back-btn" id="settingsBackBtn">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <h2 class="section-title">Settings</h2>
+                </div>
+                
+                <div class="settings-container">
+                    <div class="settings-group">
+                        <h3 class="settings-title">Account Settings</h3>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Email Notifications</h4>
+                                <p>Receive updates about your orders</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="emailNotifications" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>SMS Notifications</h4>
+                                <p>Get SMS updates for your orders</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="smsNotifications" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Promotional Emails</h4>
+                                <p>Receive offers and discounts</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="promotionalEmails">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <h3 class="settings-title">App Settings</h3>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Dark Mode</h4>
+                                <p>Use dark theme (Always on)</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="darkMode" checked disabled>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Auto-play Videos</h4>
+                                <p>Auto-play product videos</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="autoPlay">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>High Quality Images</h4>
+                                <p>Load high quality product images</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="highQualityImages" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <h3 class="settings-title">Privacy & Security</h3>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Save Payment Methods</h4>
+                                <p>Securely save your payment details</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="savePayment">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Two-Factor Authentication</h4>
+                                <p>Add extra security to your account</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="twoFactorAuth">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Show Online Status</h4>
+                                <p>Let others see when you're online</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="onlineStatus" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <h3 class="settings-title">Language & Region</h3>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Language</h4>
+                                <p>English (United States)</p>
+                            </div>
+                            <button class="btn" style="background: var(--secondary); padding: 8px 15px;">Change</button>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Currency</h4>
+                                <p>US Dollar (USD)</p>
+                            </div>
+                            <button class="btn" style="background: var(--secondary); padding: 8px 15px;">Change</button>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Time Zone</h4>
+                                <p>(GMT+06:00) Dhaka</p>
+                            </div>
+                            <button class="btn" style="background: var(--secondary); padding: 8px 15px;">Change</button>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <h3 class="settings-title">Clear Data</h3>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Clear Search History</h4>
+                                <p>Remove all your search history</p>
+                            </div>
+                            <button class="btn" style="background: var(--secondary); padding: 8px 15px;" id="clearSearchBtn">Clear</button>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Clear Cache</h4>
+                                <p>Clear app cache and temporary files</p>
+                            </div>
+                            <button class="btn" style="background: var(--secondary); padding: 8px 15px;" id="clearCacheBtn">Clear</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Help & Support Page -->
+        <div class="page" id="helpPage">
+            <div class="container">
+                <div class="page-header">
+                    <button class="back-btn" id="helpBackBtn">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <h2 class="section-title">Help & Support</h2>
+                </div>
+                
+                <div class="help-container">
+                    <i class="fas fa-headset help-icon"></i>
+                    <h2 class="help-title">How can we help you?</h2>
+                    <p class="help-description">
+                        Our customer support team is here to help you with any questions or issues you may have. 
+                        You can contact us through any of the following methods.
+                    </p>
+                    
+                    <div class="contact-options">
+                        <button class="contact-btn" id="callSupportBtn">
+                            <i class="fas fa-phone"></i>
+                            <span>Call Support: +880 1713-625566</span>
+                        </button>
+                        
+                        <button class="contact-btn whatsapp-btn" id="whatsappBtn">
+                            <i class="fab fa-whatsapp"></i>
+                            <span>Chat on WhatsApp</span>
+                        </button>
+                        
+                        <button class="contact-btn" id="emailSupportBtn">
+                            <i class="fas fa-envelope"></i>
+                            <span>Email: support@mtdigital.com</span>
+                        </button>
+                        
+                        <button class="contact-btn" id="faqBtn">
+                            <i class="fas fa-question-circle"></i>
+                            <span>Browse FAQ</span>
+                        </button>
+                    </div>
+                    
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--gray);">
+                        <h3 style="margin-bottom: 15px;">Frequently Asked Questions</h3>
+                        <div style="text-align: left;">
+                            <div style="margin-bottom: 15px;">
+                                <h4 style="color: var(--primary); margin-bottom: 5px;">How do I track my order?</h4>
+                                <p style="color: var(--light-gray);">You can track your order from the "My Orders" section in your profile.</p>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <h4 style="color: var(--primary); margin-bottom: 5px;">What is the return policy?</h4>
+                                <p style="color: var(--light-gray);">We offer 7-day return policy for most products. Some items may be non-returnable.</p>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <h4 style="color: var(--primary); margin-bottom: 5px;">How long does shipping take?</h4>
+                                <p style="color: var(--light-gray);">Shipping usually takes 3-7 business days depending on your location.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Checkout Page -->
+        <div class="page" id="checkoutPage">
+            <div class="container">
+                <div class="page-header">
+                    <button class="back-btn" id="checkoutBackBtn">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <h2 class="section-title">Checkout</h2>
+                </div>
+                
+                <div class="checkout-container">
+                    <div class="checkout-section">
+                        <h3 class="checkout-title">Shipping Address</h3>
+                        <form id="addressForm" class="address-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Full Name</label>
+                                    <input type="text" class="form-control" id="fullName" placeholder="Enter your full name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Phone Number</label>
+                                    <input type="tel" class="form-control" id="phone" placeholder="Enter your phone number" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Email Address</label>
+                                <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Address Line 1</label>
+                                <input type="text" class="form-control" id="address1" placeholder="House No, Building, Street" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Address Line 2 (Optional)</label>
+                                <input type="text" class="form-control" id="address2" placeholder="Area, Landmark">
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>City</label>
+                                    <input type="text" class="form-control" id="city" placeholder="Enter your city" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Zip Code</label>
+                                    <input type="text" class="form-control" id="zipCode" placeholder="Enter zip code" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Country</label>
+                                <select class="form-control" id="country" required>
+                                    <option value="">Select Country</option>
+                                    <option value="Bangladesh" selected>Bangladesh</option>
+                                    <option value="USA">United States</option>
+                                    <option value="UK">United Kingdom</option>
+                                    <option value="India">India</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </form>
+                        
+                        <h3 class="checkout-title" style="margin-top: 30px;">Payment Method</h3>
+                        <div class="payment-methods">
+                            <div class="payment-method" data-method="cod">
+                                <i class="fas fa-money-bill-wave payment-icon"></i>
+                                <div class="payment-info">
+                                    <h4>Cash on Delivery</h4>
+                                    <p>Pay when you receive your order</p>
+                                </div>
+                            </div>
+                            
+                            <div class="payment-method" data-method="card">
+                                <i class="fas fa-credit-card payment-icon"></i>
+                                <div class="payment-info">
+                                    <h4>Credit/Debit Card</h4>
+                                    <p>Pay securely with your card</p>
+                                </div>
+                            </div>
+                            
+                            <div class="payment-method" data-method="bkash">
+                                <i class="fas fa-mobile-alt payment-icon"></i>
+                                <div class="payment-info">
+                                    <h4>bKash</h4>
+                                    <p>Pay via bKash mobile payment</p>
+                                </div>
+                            </div>
+                            
+                            <div class="payment-method" data-method="nagad">
+                                <i class="fas fa-wallet payment-icon"></i>
+                                <div class="payment-info">
+                                    <h4>Nagad</h4>
+                                    <p>Pay via Nagad mobile payment</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="checkout-section">
+                        <h3 class="checkout-title">Order Summary</h3>
+                        <div id="orderSummaryItems"></div>
+                        
+                        <div class="order-summary-item">
+                            <span>Subtotal</span>
+                            <span id="orderSubtotal">$0.00</span>
+                        </div>
+                        
+                        <div class="order-summary-item">
+                            <span>Shipping</span>
+                            <span id="orderShipping">$5.00</span>
+                        </div>
+                        
+                        <div class="order-summary-item">
+                            <span>Tax</span>
+                            <span id="orderTax">$0.00</span>
+                        </div>
+                        
+                        <div class="order-summary-total">
+                            <span>Total</span>
+                            <span id="orderTotal">$0.00</span>
+                        </div>
+                        
+                        <div style="margin-top: 30px;">
+                            <div class="form-group">
+                                <label>Special Instructions (Optional)</label>
+                                <textarea class="form-control" id="specialInstructions" rows="3" placeholder="Any special instructions for delivery..."></textarea>
+                            </div>
+                            
+                            <button class="btn" style="background: var(--primary); color: white; width: 100%; padding: 15px; margin-top: 20px;" id="placeOrderBtn">
+                                <i class="fas fa-shopping-bag"></i> Place Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
     
     <!-- Modals -->
     <div class="modal" id="productModal">
@@ -1319,7 +2167,7 @@
                 
                 <div class="phone-auth">
                     <h4 style="margin-bottom: 15px; text-align: center;">Or sign in with Phone</h4>
-                    <input type="tel" id="phoneNumber" class="form-control" placeholder="+1 234 567 8900">
+                    <input type="tel" id="phoneNumber" class="form-control" placeholder="+880 1713-625566">
                     <div id="recaptcha-container"></div>
                     <button class="auth-btn" id="sendCodeBtn">Send Verification Code</button>
                     <div id="verifyCodeSection" style="display: none; margin-top: 15px;">
@@ -1361,17 +2209,22 @@
         </div>
         
         <div class="profile-menu">
-            <div class="profile-item" id="profileOrders">
+            <div class="profile-item" id="profileOrdersBtn">
                 <i class="fas fa-box profile-icon"></i>
                 <span>My Orders</span>
             </div>
             
-            <div class="profile-item" id="profileSettings">
+            <div class="profile-item" id="profileHistoryBtn">
+                <i class="fas fa-history profile-icon"></i>
+                <span>Order History</span>
+            </div>
+            
+            <div class="profile-item" id="profileSettingsBtn">
                 <i class="fas fa-cog profile-icon"></i>
                 <span>Settings</span>
             </div>
             
-            <div class="profile-item" id="profileHelp">
+            <div class="profile-item" id="profileHelpBtn">
                 <i class="fas fa-question-circle profile-icon"></i>
                 <span>Help & Support</span>
             </div>
@@ -1383,38 +2236,32 @@
         </div>
     </div>
     
-    <div class="notification-modal" id="notificationModal">
-        <div class="cart-header">
-            <h3>Notifications</h3>
-            <button class="close-cart" id="closeNotifications">&times;</button>
-        </div>
-        
-        <div class="cart-items" id="notificationItems">
-            <p style="text-align: center; padding: 40px; color: var(--light-gray);">No notifications</p>
-        </div>
-    </div>
-    
-    <!-- Bottom Navigation (Mobile) -->
+    <!-- Bottom Navigation -->
     <nav class="bottom-nav">
-        <a href="#" class="nav-item active" id="homeNav">
+        <div class="nav-item active" id="homeNav">
             <i class="fas fa-home nav-icon"></i>
             <span class="nav-text">Home</span>
-        </a>
+        </div>
         
-        <a href="#" class="nav-item" id="cartNav">
+        <div class="nav-item" id="historyNav">
+            <i class="fas fa-history nav-icon"></i>
+            <span class="nav-text">History</span>
+        </div>
+        
+        <div class="nav-item" id="cartNav">
             <i class="fas fa-shopping-cart nav-icon"></i>
             <span class="nav-text">Cart</span>
-        </a>
+        </div>
         
-        <a href="#" class="nav-item" id="profileNav">
+        <div class="nav-item" id="profileNav">
             <i class="fas fa-user nav-icon"></i>
             <span class="nav-text">Profile</span>
-        </a>
+        </div>
         
-        <a href="#" class="nav-item" id="categoriesNav">
+        <div class="nav-item" id="categoriesNav">
             <i class="fas fa-th nav-icon"></i>
             <span class="nav-text">Categories</span>
-        </a>
+        </div>
     </nav>
 
     <script>
@@ -1422,14 +2269,33 @@
         let currentUser = null;
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
         let products = [];
+        let orders = [];
         let currentCategory = '';
         let currentSlide = 0;
         let slideInterval;
         let confirmationResult = null;
+        let pageHistory = [];
+        let currentPage = 'home';
         
         // DOM Elements
         const homePage = document.getElementById('homePage');
         const categoryPage = document.getElementById('categoryPage');
+        const ordersPage = document.getElementById('ordersPage');
+        const historyPage = document.getElementById('historyPage');
+        const settingsPage = document.getElementById('settingsPage');
+        const helpPage = document.getElementById('helpPage');
+        const checkoutPage = document.getElementById('checkoutPage');
+        
+        const pages = {
+            home: homePage,
+            category: categoryPage,
+            orders: ordersPage,
+            history: historyPage,
+            settings: settingsPage,
+            help: helpPage,
+            checkout: checkoutPage
+        };
+        
         const searchBar = document.getElementById('searchBar');
         const searchResults = document.getElementById('searchResults');
         const productsGrid = document.getElementById('productsGrid');
@@ -1437,9 +2303,16 @@
         const categoryTitle = document.getElementById('categoryTitle');
         const categorySearchBar = document.getElementById('categorySearchBar');
         const backBtn = document.getElementById('backBtn');
+        const ordersBackBtn = document.getElementById('ordersBackBtn');
+        const historyBackBtn = document.getElementById('historyBackBtn');
+        const settingsBackBtn = document.getElementById('settingsBackBtn');
+        const helpBackBtn = document.getElementById('helpBackBtn');
+        const checkoutBackBtn = document.getElementById('checkoutBackBtn');
+        
         const productModal = document.getElementById('productModal');
         const closeModal = document.getElementById('closeModal');
         const modalBody = document.getElementById('modalBody');
+        
         const authModal = document.getElementById('authModal');
         const loginTab = document.getElementById('loginTab');
         const registerTab = document.getElementById('registerTab');
@@ -1451,6 +2324,7 @@
         const verifyCodeSection = document.getElementById('verifyCodeSection');
         const verificationCodeInput = document.getElementById('verificationCode');
         const verifyCodeBtn = document.getElementById('verifyCodeBtn');
+        
         const cartBtn = document.getElementById('cartBtn');
         const cartNav = document.getElementById('cartNav');
         const cartModal = document.getElementById('cartModal');
@@ -1458,23 +2332,54 @@
         const cartItems = document.getElementById('cartItems');
         const cartTotal = document.getElementById('cartTotal');
         const checkoutBtn = document.getElementById('checkoutBtn');
+        
         const profileBtn = document.getElementById('profileBtn');
         const profileNav = document.getElementById('profileNav');
         const profileModal = document.getElementById('profileModal');
         const profileName = document.getElementById('profileName');
         const profileEmail = document.getElementById('profileEmail');
+        const profileAvatar = document.getElementById('profileAvatar');
+        
+        const profileOrdersBtn = document.getElementById('profileOrdersBtn');
+        const profileHistoryBtn = document.getElementById('profileHistoryBtn');
+        const profileSettingsBtn = document.getElementById('profileSettingsBtn');
+        const profileHelpBtn = document.getElementById('profileHelpBtn');
         const logoutBtn = document.getElementById('logoutBtn');
+        
         const notificationBtn = document.getElementById('notificationBtn');
-        const notificationModal = document.getElementById('notificationModal');
-        const closeNotifications = document.getElementById('closeNotifications');
-        const notificationItems = document.getElementById('notificationItems');
         const notificationCount = document.getElementById('notificationCount');
         const cartCount = document.getElementById('cartCount');
+        
         const categoryItems = document.querySelectorAll('.category-item');
         const homeNav = document.getElementById('homeNav');
+        const historyNav = document.getElementById('historyNav');
         const categoriesNav = document.getElementById('categoriesNav');
+        
         const sliderContainer = document.getElementById('sliderContainer');
         const sliderDots = document.getElementById('sliderDots');
+        
+        const ordersContainer = document.getElementById('ordersContainer');
+        const historyList = document.getElementById('historyList');
+        const historyTabs = document.querySelectorAll('.history-tab');
+        
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const clearCacheBtn = document.getElementById('clearCacheBtn');
+        
+        const callSupportBtn = document.getElementById('callSupportBtn');
+        const whatsappBtn = document.getElementById('whatsappBtn');
+        const emailSupportBtn = document.getElementById('emailSupportBtn');
+        const faqBtn = document.getElementById('faqBtn');
+        
+        const addressForm = document.getElementById('addressForm');
+        const paymentMethods = document.querySelectorAll('.payment-method');
+        const orderSummaryItems = document.getElementById('orderSummaryItems');
+        const orderSubtotal = document.getElementById('orderSubtotal');
+        const orderShipping = document.getElementById('orderShipping');
+        const orderTax = document.getElementById('orderTax');
+        const orderTotal = document.getElementById('orderTotal');
+        const placeOrderBtn = document.getElementById('placeOrderBtn');
+        
+        const logoBtn = document.getElementById('logoBtn');
         const loading = document.getElementById('loading');
         const toast = document.getElementById('toast');
         
@@ -1486,14 +2391,104 @@
             initSlideshow();
             updateCartCount();
             setupEventListeners();
+            setupBackButtonNavigation();
             hideLoading();
+            
+            // Initialize page history
+            pageHistory.push('home');
         });
+        
+        // Setup back button navigation
+        function setupBackButtonNavigation() {
+            // Handle browser back button
+            window.addEventListener('popstate', function(event) {
+                if (pageHistory.length > 1) {
+                    pageHistory.pop();
+                    const previousPage = pageHistory[pageHistory.length - 1];
+                    navigateToPage(previousPage, false);
+                } else {
+                    if (currentPage !== 'home') {
+                        navigateToPage('home');
+                    }
+                }
+            });
+            
+            // Prevent accidental back navigation on mobile
+            let lastTouchY = 0;
+            document.addEventListener('touchstart', function(event) {
+                lastTouchY = event.touches[0].clientY;
+            }, { passive: true });
+            
+            // Add custom back button handlers
+            const backButtons = [backBtn, ordersBackBtn, historyBackBtn, settingsBackBtn, helpBackBtn, checkoutBackBtn];
+            backButtons.forEach(btn => {
+                if (btn) {
+                    btn.addEventListener('click', handleBackNavigation);
+                }
+            });
+        }
+        
+        // Handle back navigation
+        function handleBackNavigation() {
+            if (pageHistory.length > 1) {
+                pageHistory.pop();
+                const previousPage = pageHistory[pageHistory.length - 1];
+                navigateToPage(previousPage, false);
+            } else {
+                navigateToPage('home');
+            }
+        }
+        
+        // Navigate to page
+        function navigateToPage(pageName, addToHistory = true) {
+            // Hide all pages
+            Object.values(pages).forEach(page => {
+                if (page) page.classList.remove('active');
+            });
+            
+            // Show target page
+            if (pages[pageName]) {
+                pages[pageName].classList.add('active');
+                currentPage = pageName;
+                
+                // Update navigation
+                updateBottomNav(pageName);
+                
+                // Add to history if needed
+                if (addToHistory && pageHistory[pageHistory.length - 1] !== pageName) {
+                    pageHistory.push(pageName);
+                    window.history.pushState({ page: pageName }, '', `#${pageName}`);
+                }
+                
+                // Load page specific data
+                if (pageName === 'orders') {
+                    loadUserOrders();
+                } else if (pageName === 'history') {
+                    loadOrderHistory();
+                } else if (pageName === 'checkout') {
+                    updateOrderSummary();
+                }
+            }
+        }
+        
+        // Update bottom navigation
+        function updateBottomNav(activePage) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            
+            if (activePage === 'home') {
+                homeNav.classList.add('active');
+            } else if (activePage === 'history') {
+                historyNav.classList.add('active');
+            } else if (activePage === 'checkout') {
+                // Checkout doesn't have a nav item
+            } else if (activePage === 'category') {
+                categoriesNav.classList.add('active');
+            }
+        }
         
         // Initialize Firebase
         async function initFirebase() {
             try {
-                // Firebase is already initialized in the module script
-                // Setup auth state listener
                 window.auth.onAuthStateChanged(async (user) => {
                     currentUser = user;
                     if (user) {
@@ -1503,17 +2498,19 @@
                         updateUserAvatar(user);
                         
                         // Load user data
-                        await loadUserNotifications(user.uid);
+                        await loadUserOrders();
+                        await loadOrderHistory();
                         await loadUserCart(user.uid);
+                        
+                        showToast('Welcome back!', 'success');
                     } else {
                         // User is signed out
                         profileName.textContent = 'Guest User';
                         profileEmail.textContent = 'guest@example.com';
-                        document.getElementById('profileAvatar').innerHTML = '<i class="fas fa-user"></i>';
+                        profileAvatar.innerHTML = '<i class="fas fa-user"></i>';
                     }
                 });
                 
-                showToast('Firebase initialized successfully');
             } catch (error) {
                 console.error('Firebase initialization error:', error);
                 showToast('Error initializing Firebase', 'error');
@@ -1590,6 +2587,9 @@
         
         // Setup event listeners
         function setupEventListeners() {
+            // Logo click - go to home
+            logoBtn.addEventListener('click', () => navigateToPage('home'));
+            
             // Search functionality
             searchBar.addEventListener('input', handleSearch);
             searchBar.addEventListener('focus', () => {
@@ -1615,13 +2615,9 @@
                 });
             });
             
-            // Back button
-            backBtn.addEventListener('click', showHomePage);
-            
             // Modal controls
             closeModal.addEventListener('click', () => productModal.style.display = 'none');
             closeCart.addEventListener('click', () => cartModal.style.display = 'none');
-            closeNotifications.addEventListener('click', () => notificationModal.style.display = 'none');
             
             // Auth tabs
             loginTab.addEventListener('click', () => {
@@ -1648,28 +2644,141 @@
             // Cart
             cartBtn.addEventListener('click', openCart);
             cartNav.addEventListener('click', openCart);
-            checkoutBtn.addEventListener('click', handleCheckout);
+            checkoutBtn.addEventListener('click', () => {
+                if (cart.length === 0) {
+                    showToast('Your cart is empty', 'error');
+                    return;
+                }
+                if (!currentUser) {
+                    authModal.style.display = 'block';
+                    showToast('Please login to checkout');
+                    return;
+                }
+                cartModal.style.display = 'none';
+                navigateToPage('checkout');
+            });
             
             // Profile
             profileBtn.addEventListener('click', openProfile);
             profileNav.addEventListener('click', openProfile);
             logoutBtn.addEventListener('click', handleLogout);
             
-            // Notifications
-            notificationBtn.addEventListener('click', openNotifications);
+            // Profile menu items
+            profileOrdersBtn.addEventListener('click', () => {
+                profileModal.style.display = 'none';
+                navigateToPage('orders');
+            });
+            
+            profileHistoryBtn.addEventListener('click', () => {
+                profileModal.style.display = 'none';
+                navigateToPage('history');
+            });
+            
+            profileSettingsBtn.addEventListener('click', () => {
+                profileModal.style.display = 'none';
+                navigateToPage('settings');
+            });
+            
+            profileHelpBtn.addEventListener('click', () => {
+                profileModal.style.display = 'none';
+                navigateToPage('help');
+            });
             
             // Bottom navigation
-            homeNav.addEventListener('click', showHomePage);
+            homeNav.addEventListener('click', () => navigateToPage('home'));
+            historyNav.addEventListener('click', () => navigateToPage('history'));
             categoriesNav.addEventListener('click', () => {
                 // Scroll to categories section
                 document.querySelector('.categories').scrollIntoView({ behavior: 'smooth' });
             });
             
+            // Settings
+            clearSearchBtn.addEventListener('click', () => {
+                localStorage.removeItem('searchHistory');
+                showToast('Search history cleared', 'success');
+            });
+            
+            clearCacheBtn.addEventListener('click', () => {
+                localStorage.removeItem('cart');
+                cart = [];
+                updateCartCount();
+                showToast('Cache cleared', 'success');
+            });
+            
+            // Help & Support
+            callSupportBtn.addEventListener('click', () => {
+                window.open('tel:+8801713625566');
+            });
+            
+            whatsappBtn.addEventListener('click', () => {
+                window.open('https://wa.me/8801713625566?text=Hello%20M.T%20Digital%20Support,%20I%20need%20help');
+            });
+            
+            emailSupportBtn.addEventListener('click', () => {
+                window.location.href = 'mailto:support@mtdigital.com';
+            });
+            
+            faqBtn.addEventListener('click', () => {
+                showToast('FAQ section will be available soon', 'success');
+            });
+            
+            // Checkout
+            paymentMethods.forEach(method => {
+                method.addEventListener('click', () => {
+                    paymentMethods.forEach(m => m.classList.remove('selected'));
+                    method.classList.add('selected');
+                });
+            });
+            
+            placeOrderBtn.addEventListener('click', handlePlaceOrder);
+            
             // Close modals when clicking outside
             window.addEventListener('click', (e) => {
                 if (e.target === productModal) productModal.style.display = 'none';
                 if (e.target === authModal) authModal.style.display = 'none';
+                if (e.target === profileModal) profileModal.style.display = 'none';
             });
+            
+            // History tabs
+            historyTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    historyTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    const status = tab.getAttribute('data-status');
+                    filterOrderHistory(status);
+                });
+            });
+        }
+        
+        // Show category page
+        function showCategoryPage(category) {
+            currentCategory = category;
+            navigateToPage('category');
+            
+            // Update category title
+            const categoryNames = {
+                display: 'Display Products',
+                charger: 'Charger Products',
+                mobile: 'Mobile Products'
+            };
+            categoryTitle.textContent = categoryNames[category] || category;
+            
+            // Filter products by category
+            const filtered = products.filter(p => p.category === category);
+            renderProducts(filtered, categoryProductsGrid);
+            categorySearchBar.value = '';
+        }
+        
+        // Handle category search
+        function handleCategorySearch() {
+            const query = categorySearchBar.value.toLowerCase().trim();
+            const filtered = products.filter(p => 
+                p.category === currentCategory && 
+                (p.name.toLowerCase().includes(query) || 
+                 p.description.toLowerCase().includes(query))
+            );
+            
+            renderProducts(filtered, categoryProductsGrid);
         }
         
         // Render products to grid
@@ -1677,7 +2786,13 @@
             gridElement.innerHTML = '';
             
             if (productsArray.length === 0) {
-                gridElement.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--light-gray);">No products found</p>';
+                gridElement.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--light-gray);">
+                        <i class="fas fa-search" style="font-size: 40px; margin-bottom: 15px;"></i>
+                        <h3>No products found</h3>
+                        <p>Try different search terms</p>
+                    </div>
+                `;
                 return;
             }
             
@@ -1842,59 +2957,6 @@
             searchResults.classList.add('active');
         }
         
-        // Category search
-        function handleCategorySearch() {
-            const query = categorySearchBar.value.toLowerCase().trim();
-            const filtered = products.filter(p => 
-                p.category === currentCategory && 
-                (p.name.toLowerCase().includes(query) || 
-                 p.description.toLowerCase().includes(query))
-            );
-            
-            renderProducts(filtered, categoryProductsGrid);
-        }
-        
-        // Show category page
-        function showCategoryPage(category) {
-            currentCategory = category;
-            homePage.style.display = 'none';
-            categoryPage.style.display = 'block';
-            
-            // Update category title
-            const categoryNames = {
-                display: 'Display Products',
-                charger: 'Charger Products',
-                mobile: 'Mobile Products'
-            };
-            categoryTitle.textContent = categoryNames[category] || category;
-            
-            // Filter products by category
-            const filtered = products.filter(p => p.category === category);
-            renderProducts(filtered, categoryProductsGrid);
-            categorySearchBar.value = '';
-            
-            // Update bottom nav
-            updateBottomNav('category');
-        }
-        
-        // Show home page
-        function showHomePage() {
-            homePage.style.display = 'block';
-            categoryPage.style.display = 'none';
-            updateBottomNav('home');
-        }
-        
-        // Update bottom navigation
-        function updateBottomNav(active) {
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            
-            if (active === 'home') {
-                homeNav.classList.add('active');
-            } else if (active === 'category') {
-                categoriesNav.classList.add('active');
-            }
-        }
-        
         // Show product detail
         function showProductDetail(productId) {
             const product = products.find(p => p.id === productId);
@@ -1943,52 +3005,9 @@
             const product = products.find(p => p.id === productId);
             if (!product) return;
             
-            try {
-                showLoading();
-                
-                // Save order to Firestore
-                const orderData = {
-                    userId: currentUser.uid,
-                    productId: product.id,
-                    productName: product.name,
-                    price: product.price,
-                    quantity: 1,
-                    status: 'pending',
-                    createdAt: window.firebaseFunctions.serverTimestamp(),
-                    customerName: currentUser.displayName || 'Customer',
-                    customerEmail: currentUser.email || 'No email',
-                    customerPhone: currentUser.phoneNumber || 'No phone'
-                };
-                
-                await window.firebaseFunctions.addDoc(
-                    window.firebaseFunctions.collection(window.db, 'orders'),
-                    orderData
-                );
-                
-                // Create notification for admin
-                const notificationData = {
-                    type: 'new_order',
-                    title: 'New Order Placed',
-                    message: `${currentUser.displayName || 'A customer'} ordered ${product.name}`,
-                    orderId: orderData.id,
-                    userId: currentUser.uid,
-                    read: false,
-                    createdAt: window.firebaseFunctions.serverTimestamp()
-                };
-                
-                await window.firebaseFunctions.addDoc(
-                    window.firebaseFunctions.collection(window.db, 'notifications'),
-                    notificationData
-                );
-                
-                hideLoading();
-                showToast(`Order placed for ${product.name}! The admin has been notified.`);
-                
-            } catch (error) {
-                hideLoading();
-                console.error('Order error:', error);
-                showToast('Error placing order', 'error');
-            }
+            // Add to cart and go to checkout
+            addToCart(productId);
+            navigateToPage('checkout');
         }
         
         // Add to cart
@@ -2015,11 +3034,6 @@
             updateCartCount();
             saveCartToStorage();
             showToast(`${product.name} added to cart!`);
-            
-            // If user is logged in, sync cart to Firestore
-            if (currentUser) {
-                syncCartToFirestore();
-            }
         }
         
         // Update cart count
@@ -2056,7 +3070,7 @@
                             <button class="btn" style="padding: 5px 10px; font-size: 12px;" data-index="${index}" data-action="decrease">-</button>
                             <span>${item.quantity}</span>
                             <button class="btn" style="padding: 5px 10px; font-size: 12px;" data-index="${index}" data-action="increase">+</button>
-                            <button class="btn" style="padding: 5px 10px; font-size: 12px; background: var(--danger);" data-index="${index}" data-action="remove">Remove</button>
+                            <button class="btn" style="padding: 5px 10px; font-size: 12px; background: var(--danger); color: white;" data-index="${index}" data-action="remove">Remove</button>
                         </div>
                     </div>
                 `;
@@ -2088,10 +3102,6 @@
                     
                     updateCartCount();
                     saveCartToStorage();
-                    
-                    if (currentUser) {
-                        syncCartToFirestore();
-                    }
                 });
             });
         }
@@ -2112,11 +3122,6 @@
             profileModal.style.display = 'block';
         }
         
-        // Open notifications
-        function openNotifications() {
-            notificationModal.style.display = 'block';
-        }
-        
         // Handle login
         async function handleLogin(e) {
             e.preventDefault();
@@ -2131,7 +3136,7 @@
                 authModal.style.display = 'none';
                 e.target.reset();
                 hideLoading();
-                showToast('Login successful!');
+                showToast('Login successful!', 'success');
                 
             } catch (error) {
                 hideLoading();
@@ -2161,12 +3166,14 @@
                 );
                 
                 // Update user profile
-                await updateProfile({ displayName: name });
+                await window.firebaseFunctions.updateProfile(userCredential.user, {
+                    displayName: name
+                });
                 
                 authModal.style.display = 'none';
                 e.target.reset();
                 hideLoading();
-                showToast('Registration successful!');
+                showToast('Registration successful! Welcome to M.T Digital!', 'success');
                 
             } catch (error) {
                 hideLoading();
@@ -2183,7 +3190,7 @@
                 
                 authModal.style.display = 'none';
                 hideLoading();
-                showToast('Google login successful!');
+                showToast('Google login successful!', 'success');
                 
             } catch (error) {
                 hideLoading();
@@ -2220,7 +3227,7 @@
                 
                 verifyCodeSection.style.display = 'block';
                 hideLoading();
-                showToast('Verification code sent!');
+                showToast('Verification code sent!', 'success');
                 
             } catch (error) {
                 hideLoading();
@@ -2246,7 +3253,7 @@
                 verificationCodeInput.value = '';
                 verifyCodeSection.style.display = 'none';
                 hideLoading();
-                showToast('Phone verification successful!');
+                showToast('Phone verification successful!', 'success');
                 
             } catch (error) {
                 hideLoading();
@@ -2260,43 +3267,345 @@
             try {
                 await window.firebaseFunctions.signOut(window.auth);
                 profileModal.style.display = 'none';
-                showToast('Logged out successfully');
+                showToast('Logged out successfully', 'success');
             } catch (error) {
                 console.error('Logout error:', error);
                 showToast('Error logging out', 'error');
             }
         }
         
-        // Handle checkout
-        async function handleCheckout() {
+        // Update user avatar
+        function updateUserAvatar(user) {
+            if (user.photoURL) {
+                profileAvatar.innerHTML = `<img src="${user.photoURL}" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            } else {
+                const initials = user.displayName ? 
+                    user.displayName.split(' ').map(n => n[0]).join('').toUpperCase() : 
+                    user.email ? user.email[0].toUpperCase() : 'U';
+                profileAvatar.innerHTML = `<span style="font-size: 36px; font-weight: bold;">${initials}</span>`;
+            }
+        }
+        
+        // Load user orders
+        async function loadUserOrders() {
+            if (!currentUser) return;
+            
+            try {
+                const q = window.firebaseFunctions.query(
+                    window.firebaseFunctions.collection(window.db, 'orders'),
+                    window.firebaseFunctions.where('userId', '==', currentUser.uid),
+                    window.firebaseFunctions.orderBy('createdAt', 'desc'),
+                    window.firebaseFunctions.limit(10)
+                );
+                
+                const snapshot = await window.firebaseFunctions.getDocs(q);
+                orders = [];
+                
+                snapshot.forEach(doc => {
+                    orders.push({ id: doc.id, ...doc.data() });
+                });
+                
+                updateOrdersDisplay();
+                
+            } catch (error) {
+                console.error('Load orders error:', error);
+            }
+        }
+        
+        // Update orders display
+        function updateOrdersDisplay() {
+            if (orders.length === 0) {
+                ordersContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-box-open empty-icon"></i>
+                        <h3>No Orders Yet</h3>
+                        <p>You haven't placed any orders yet. Start shopping now!</p>
+                        <button class="btn" style="background: var(--primary); color: white; margin-top: 20px; padding: 10px 20px;" onclick="navigateToPage('home')">
+                            <i class="fas fa-shopping-bag"></i> Start Shopping
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            orders.forEach(order => {
+                const date = order.createdAt?.toDate ? order.createdAt.toDate() : new Date();
+                const statusClass = `status-${order.status || 'pending'}`;
+                const statusText = order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending';
+                
+                html += `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div>
+                                <div class="order-id">Order #${order.id.substring(0, 8)}</div>
+                                <div class="order-date">${date.toLocaleDateString()}</div>
+                            </div>
+                            <div class="order-status ${statusClass}">${statusText}</div>
+                        </div>
+                        
+                        <div class="order-items">
+                            ${Array.isArray(order.items) ? order.items.map(item => `
+                                <div class="order-item">
+                                    <img src="${item.image || 'https://via.placeholder.com/60'}" alt="${item.name}" class="order-item-img">
+                                    <div class="order-item-info">
+                                        <div class="order-item-name">${item.name}</div>
+                                        <div class="order-item-price">$${item.price?.toFixed(2) || '0.00'} x ${item.quantity || 1}</div>
+                                    </div>
+                                </div>
+                            `).join('') : `
+                                <div class="order-item">
+                                    <img src="https://via.placeholder.com/60" alt="Product" class="order-item-img">
+                                    <div class="order-item-info">
+                                        <div class="order-item-name">${order.productName || 'Product'}</div>
+                                        <div class="order-item-price">$${order.price?.toFixed(2) || '0.00'} x ${order.quantity || 1}</div>
+                                    </div>
+                                </div>
+                            `}
+                        </div>
+                        
+                        <div class="order-footer">
+                            <div class="order-total">Total: $${order.total?.toFixed(2) || order.price?.toFixed(2) || '0.00'}</div>
+                            <button class="btn" style="background: var(--secondary); color: white; padding: 8px 15px; font-size: 14px;" onclick="trackOrder('${order.id}')">
+                                Track Order
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            ordersContainer.innerHTML = html;
+        }
+        
+        // Load order history
+        async function loadOrderHistory() {
+            if (!currentUser) return;
+            
+            try {
+                const q = window.firebaseFunctions.query(
+                    window.firebaseFunctions.collection(window.db, 'orders'),
+                    window.firebaseFunctions.where('userId', '==', currentUser.uid),
+                    window.firebaseFunctions.orderBy('createdAt', 'desc')
+                );
+                
+                const snapshot = await window.firebaseFunctions.getDocs(q);
+                const allOrders = [];
+                
+                snapshot.forEach(doc => {
+                    allOrders.push({ id: doc.id, ...doc.data() });
+                });
+                
+                updateOrderHistoryDisplay(allOrders);
+                
+            } catch (error) {
+                console.error('Load order history error:', error);
+            }
+        }
+        
+        // Update order history display
+        function updateOrderHistoryDisplay(allOrders) {
+            if (allOrders.length === 0) {
+                historyList.innerHTML = `
+                    <div class="history-empty">
+                        <i class="fas fa-history"></i>
+                        <h3>No Order History</h3>
+                        <p>Your order history will appear here</p>
+                        <button class="btn" style="background: var(--primary); color: white; margin-top: 20px; padding: 10px 20px;" onclick="navigateToPage('home')">
+                            <i class="fas fa-shopping-bag"></i> Start Shopping
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            filterOrderHistory('all', allOrders);
+        }
+        
+        // Filter order history
+        function filterOrderHistory(status, allOrders = null) {
+            const ordersToFilter = allOrders || orders;
+            let filteredOrders = ordersToFilter;
+            
+            if (status !== 'all') {
+                filteredOrders = ordersToFilter.filter(order => order.status === status);
+            }
+            
+            if (filteredOrders.length === 0) {
+                historyList.innerHTML = `
+                    <div class="history-empty">
+                        <i class="fas fa-search"></i>
+                        <h3>No ${status === 'all' ? '' : status} Orders</h3>
+                        <p>No orders found with this status</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            filteredOrders.forEach(order => {
+                const date = order.createdAt?.toDate ? order.createdAt.toDate() : new Date();
+                const statusClass = `status-${order.status || 'pending'}`;
+                const statusText = order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending';
+                
+                html += `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div>
+                                <div class="order-id">Order #${order.id.substring(0, 8)}</div>
+                                <div class="order-date">${date.toLocaleDateString()}</div>
+                            </div>
+                            <div class="order-status ${statusClass}">${statusText}</div>
+                        </div>
+                        
+                        <div class="order-items">
+                            ${Array.isArray(order.items) ? order.items.slice(0, 2).map(item => `
+                                <div class="order-item">
+                                    <img src="${item.image || 'https://via.placeholder.com/60'}" alt="${item.name}" class="order-item-img">
+                                    <div class="order-item-info">
+                                        <div class="order-item-name">${item.name}</div>
+                                        <div class="order-item-price">$${item.price?.toFixed(2) || '0.00'} x ${item.quantity || 1}</div>
+                                    </div>
+                                </div>
+                            `).join('') : `
+                                <div class="order-item">
+                                    <img src="https://via.placeholder.com/60" alt="Product" class="order-item-img">
+                                    <div class="order-item-info">
+                                        <div class="order-item-name">${order.productName || 'Product'}</div>
+                                        <div class="order-item-price">$${order.price?.toFixed(2) || '0.00'} x ${order.quantity || 1}</div>
+                                    </div>
+                                </div>
+                            `}
+                            ${Array.isArray(order.items) && order.items.length > 2 ? `
+                                <div style="text-align: center; padding: 10px; color: var(--light-gray);">
+                                    + ${order.items.length - 2} more items
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="order-footer">
+                            <div class="order-total">Total: $${order.total?.toFixed(2) || order.price?.toFixed(2) || '0.00'}</div>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn" style="background: var(--info); color: white; padding: 8px 15px; font-size: 14px;" onclick="viewOrderDetails('${order.id}')">
+                                    View Details
+                                </button>
+                                ${order.status === 'pending' ? `
+                                    <button class="btn" style="background: var(--danger); color: white; padding: 8px 15px; font-size: 14px;" onclick="cancelOrder('${order.id}')">
+                                        Cancel
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            historyList.innerHTML = html;
+        }
+        
+        // Update order summary
+        function updateOrderSummary() {
+            if (cart.length === 0) {
+                orderSummaryItems.innerHTML = '<p style="color: var(--light-gray); text-align: center; padding: 20px;">Cart is empty</p>';
+                orderSubtotal.textContent = '$0.00';
+                orderTotal.textContent = '$0.00';
+                return;
+            }
+            
+            let html = '';
+            let subtotal = 0;
+            
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                subtotal += itemTotal;
+                
+                html += `
+                    <div class="order-summary-item">
+                        <span>${item.name} x ${item.quantity}</span>
+                        <span>$${itemTotal.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            
+            orderSummaryItems.innerHTML = html;
+            
+            const shipping = 5.00;
+            const tax = subtotal * 0.05;
+            const total = subtotal + shipping + tax;
+            
+            orderSubtotal.textContent = `$${subtotal.toFixed(2)}`;
+            orderShipping.textContent = `$${shipping.toFixed(2)}`;
+            orderTax.textContent = `$${tax.toFixed(2)}`;
+            orderTotal.textContent = `$${total.toFixed(2)}`;
+        }
+        
+        // Handle place order
+        async function handlePlaceOrder() {
             if (cart.length === 0) {
                 showToast('Your cart is empty', 'error');
                 return;
             }
             
-            if (!currentUser) {
-                authModal.style.display = 'block';
-                cartModal.style.display = 'none';
-                showToast('Please login to checkout');
+            // Validate address form
+            const addressForm = document.getElementById('addressForm');
+            if (!addressForm.checkValidity()) {
+                showToast('Please fill all required fields', 'error');
+                addressForm.reportValidity();
                 return;
             }
+            
+            // Get selected payment method
+            const selectedPayment = document.querySelector('.payment-method.selected');
+            if (!selectedPayment) {
+                showToast('Please select a payment method', 'error');
+                return;
+            }
+            
+            const paymentMethod = selectedPayment.getAttribute('data-method');
             
             try {
                 showLoading();
                 
-                // Create order in Firestore
+                // Calculate totals
+                const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                const shipping = 5.00;
+                const tax = subtotal * 0.05;
+                const total = subtotal + shipping + tax;
+                
+                // Prepare order data
                 const orderData = {
                     userId: currentUser.uid,
-                    items: cart,
-                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                    items: cart.map(item => ({
+                        id: item.id,
+                        name: item.name,
+                        price: item.price,
+                        quantity: item.quantity,
+                        image: item.image,
+                        category: item.category
+                    })),
+                    subtotal: subtotal,
+                    shipping: shipping,
+                    tax: tax,
+                    total: total,
                     status: 'pending',
+                    paymentMethod: paymentMethod,
+                    shippingAddress: {
+                        fullName: document.getElementById('fullName').value,
+                        phone: document.getElementById('phone').value,
+                        email: document.getElementById('email').value,
+                        address1: document.getElementById('address1').value,
+                        address2: document.getElementById('address2').value,
+                        city: document.getElementById('city').value,
+                        zipCode: document.getElementById('zipCode').value,
+                        country: document.getElementById('country').value
+                    },
+                    specialInstructions: document.getElementById('specialInstructions').value,
                     createdAt: window.firebaseFunctions.serverTimestamp(),
-                    customerName: currentUser.displayName || 'Customer',
-                    customerEmail: currentUser.email || 'No email',
-                    customerPhone: currentUser.phoneNumber || 'No phone',
-                    shippingAddress: 'Not specified'
+                    updatedAt: window.firebaseFunctions.serverTimestamp()
                 };
                 
+                // Save order to Firestore
                 const orderRef = await window.firebaseFunctions.addDoc(
                     window.firebaseFunctions.collection(window.db, 'orders'),
                     orderData
@@ -2305,8 +3614,8 @@
                 // Create notification for admin
                 const notificationData = {
                     type: 'new_order',
-                    title: 'New Cart Order',
-                    message: `${currentUser.displayName || 'A customer'} placed an order with ${cart.length} items`,
+                    title: 'New Order Placed',
+                    message: `${currentUser.displayName || 'Customer'} placed a new order ($${total.toFixed(2)})`,
                     orderId: orderRef.id,
                     userId: currentUser.uid,
                     read: false,
@@ -2322,145 +3631,24 @@
                 cart = [];
                 updateCartCount();
                 saveCartToStorage();
-                await syncCartToFirestore();
                 
-                cartModal.style.display = 'none';
+                // Reset form
+                addressForm.reset();
+                document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
+                
                 hideLoading();
-                showToast('Order placed successfully! The admin has been notified.');
+                
+                // Show success message and redirect
+                showToast('Order placed successfully! You will receive confirmation soon.', 'success');
+                
+                setTimeout(() => {
+                    navigateToPage('orders');
+                }, 2000);
                 
             } catch (error) {
                 hideLoading();
-                console.error('Checkout error:', error);
-                showToast('Error placing order', 'error');
-            }
-        }
-        
-        // Update user profile
-        async function updateProfile(data) {
-            if (window.auth.currentUser) {
-                await updateProfile(window.auth.currentUser, data);
-            }
-        }
-        
-        // Update user avatar
-        function updateUserAvatar(user) {
-            const avatar = document.getElementById('profileAvatar');
-            if (user.photoURL) {
-                avatar.innerHTML = `<img src="${user.photoURL}" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-            } else {
-                const initials = user.displayName ? 
-                    user.displayName.split(' ').map(n => n[0]).join('').toUpperCase() : 
-                    'U';
-                avatar.innerHTML = `<span style="font-size: 24px; font-weight: bold;">${initials}</span>`;
-            }
-        }
-        
-        // Load user notifications
-        async function loadUserNotifications(userId) {
-            try {
-                const q = window.firebaseFunctions.query(
-                    window.firebaseFunctions.collection(window.db, 'notifications'),
-                    window.firebaseFunctions.where('userId', '==', userId),
-                    window.firebaseFunctions.orderBy('createdAt', 'desc')
-                );
-                
-                const snapshot = await window.firebaseFunctions.getDocs(q);
-                const notifications = [];
-                let unreadCount = 0;
-                
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    notifications.push(data);
-                    if (!data.read) unreadCount++;
-                });
-                
-                // Update notification count
-                notificationCount.textContent = unreadCount;
-                
-                // Update notification modal
-                updateNotificationDisplay(notifications);
-                
-            } catch (error) {
-                console.error('Load notifications error:', error);
-            }
-        }
-        
-        // Update notification display
-        function updateNotificationDisplay(notifications) {
-            notificationItems.innerHTML = '';
-            
-            if (notifications.length === 0) {
-                notificationItems.innerHTML = '<p style="text-align: center; padding: 40px; color: var(--light-gray);">No notifications</p>';
-                return;
-            }
-            
-            notifications.forEach(notification => {
-                const item = document.createElement('div');
-                item.className = 'notification-item';
-                item.innerHTML = `
-                    <h4 class="notification-title">${notification.title}</h4>
-                    <p class="notification-message">${notification.message}</p>
-                    <p class="notification-time">${new Date(notification.createdAt?.toDate()).toLocaleString()}</p>
-                `;
-                notificationItems.appendChild(item);
-            });
-        }
-        
-        // Load user cart from Firestore
-        async function loadUserCart(userId) {
-            try {
-                const cartRef = window.firebaseFunctions.collection(window.db, 'carts');
-                const q = window.firebaseFunctions.query(
-                    cartRef,
-                    window.firebaseFunctions.where('userId', '==', userId)
-                );
-                
-                const snapshot = await window.firebaseFunctions.getDocs(q);
-                
-                if (!snapshot.empty) {
-                    const cartData = snapshot.docs[0].data();
-                    cart = cartData.items || [];
-                    updateCartCount();
-                    saveCartToStorage();
-                }
-                
-            } catch (error) {
-                console.error('Load cart error:', error);
-            }
-        }
-        
-        // Sync cart to Firestore
-        async function syncCartToFirestore() {
-            if (!currentUser) return;
-            
-            try {
-                const cartRef = window.firebaseFunctions.collection(window.db, 'carts');
-                const q = window.firebaseFunctions.query(
-                    cartRef,
-                    window.firebaseFunctions.where('userId', '==', currentUser.uid)
-                );
-                
-                const snapshot = await window.firebaseFunctions.getDocs(q);
-                
-                if (!snapshot.empty) {
-                    // Update existing cart
-                    const docId = snapshot.docs[0].id;
-                    await window.firebaseFunctions.updateDoc(
-                        window.firebaseFunctions.doc(window.db, 'carts', docId),
-                        { items: cart, updatedAt: window.firebaseFunctions.serverTimestamp() }
-                    );
-                } else {
-                    // Create new cart
-                    await window.firebaseFunctions.addDoc(cartRef, {
-                        userId: currentUser.uid,
-                        items: cart,
-                        createdAt: window.firebaseFunctions.serverTimestamp(),
-                        updatedAt: window.firebaseFunctions.serverTimestamp()
-                    });
-                }
-                
-            } catch (error) {
-                console.error('Sync cart error:', error);
+                console.error('Place order error:', error);
+                showToast('Error placing order: ' + error.message, 'error');
             }
         }
         
@@ -2468,6 +3656,50 @@
         function saveCartToStorage() {
             localStorage.setItem('cart', JSON.stringify(cart));
         }
+        
+        // Global functions for buttons
+        window.trackOrder = function(orderId) {
+            showToast(`Tracking order #${orderId.substring(0, 8)}`, 'success');
+        };
+        
+        window.viewOrderDetails = function(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const date = order.createdAt?.toDate ? order.createdAt.toDate() : new Date();
+            const statusClass = `status-${order.status || 'pending'}`;
+            const statusText = order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending';
+            
+            alert(`Order Details:\n\nOrder ID: ${orderId}\nDate: ${date.toLocaleDateString()}\nStatus: ${statusText}\nTotal: $${order.total?.toFixed(2) || '0.00'}\nPayment Method: ${order.paymentMethod || 'Not specified'}`);
+        };
+        
+        window.cancelOrder = async function(orderId) {
+            if (!confirm('Are you sure you want to cancel this order?')) return;
+            
+            try {
+                showLoading();
+                
+                await window.firebaseFunctions.updateDoc(
+                    window.firebaseFunctions.doc(window.db, 'orders', orderId),
+                    { 
+                        status: 'cancelled',
+                        updatedAt: window.firebaseFunctions.serverTimestamp()
+                    }
+                );
+                
+                hideLoading();
+                showToast('Order cancelled successfully', 'success');
+                
+                // Refresh orders
+                await loadUserOrders();
+                await loadOrderHistory();
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Cancel order error:', error);
+                showToast('Error cancelling order', 'error');
+            }
+        };
         
         // Show loading spinner
         function showLoading() {
@@ -2482,7 +3714,7 @@
         // Show toast notification
         function showToast(message, type = 'success') {
             toast.textContent = message;
-            toast.style.backgroundColor = type === 'error' ? 'var(--danger)' : 'var(--primary)';
+            toast.className = 'toast ' + type;
             toast.style.display = 'block';
             
             setTimeout(() => {
